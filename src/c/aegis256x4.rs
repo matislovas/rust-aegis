@@ -33,7 +33,6 @@ const _: () = {
 };
 
 extern "C" {
-    fn aegis_init() -> c_int;
 
     fn aegis256x4_state_init(
         st_: *mut aegis256x4_state,
@@ -120,12 +119,6 @@ extern "C" {
     fn aegis256x4_mac_state_clone(dst: *mut aegis256x4_mac_state, src: *const aegis256x4_mac_state);
 }
 
-#[cfg(feature = "std")]
-static INIT: std::sync::Once = std::sync::Once::new();
-#[cfg(not(feature = "std"))]
-static INITIALIZED: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(false);
-#[cfg(not(feature = "std"))]
-static INITIALIZING: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(false);
 
 /// Tag length in bytes must be 16 (128 bits) or 32 (256 bits)
 #[derive(Copy, Clone)]
@@ -145,28 +138,7 @@ pub type Tag<const TAG_BYTES: usize> = [u8; TAG_BYTES];
 
 impl<const TAG_BYTES: usize> Aegis256X4<TAG_BYTES> {
     fn ensure_init() {
-        #[cfg(feature = "std")]
-        INIT.call_once(|| assert_eq!(unsafe { aegis_init() }, 0));
-
-        #[cfg(not(feature = "std"))]
-        {
-            use core::sync::atomic::Ordering::{Acquire, Relaxed, Release};
-
-            if INITIALIZED.load(Acquire) {
-                return;
-            }
-            let initializing = match INITIALIZING.compare_exchange(false, true, Acquire, Relaxed) {
-                Ok(initializing) => initializing,
-                Err(initializing) => initializing,
-            };
-            if initializing {
-                while !INITIALIZED.load(Acquire) {}
-            } else {
-                assert_eq!(unsafe { aegis_init() }, 0);
-                INITIALIZED.store(true, Release);
-                INITIALIZING.store(false, Release);
-            }
-        }
+        super::init();
     }
 
     /// Creates a new AEGIS-256X4 instance from a key and a nonce.
@@ -560,28 +532,7 @@ impl<const TAG_BYTES: usize> Clone for Aegis256X4Mac<TAG_BYTES> {
 
 impl<const TAG_BYTES: usize> Aegis256X4Mac<TAG_BYTES> {
     fn ensure_init() {
-        #[cfg(feature = "std")]
-        INIT.call_once(|| assert_eq!(unsafe { aegis_init() }, 0));
-
-        #[cfg(not(feature = "std"))]
-        {
-            use core::sync::atomic::Ordering::{Acquire, Relaxed, Release};
-
-            if INITIALIZED.load(Acquire) {
-                return;
-            }
-            let initializing = match INITIALIZING.compare_exchange(false, true, Acquire, Relaxed) {
-                Ok(initializing) => initializing,
-                Err(initializing) => initializing,
-            };
-            if initializing {
-                while !INITIALIZED.load(Acquire) {}
-            } else {
-                assert_eq!(unsafe { aegis_init() }, 0);
-                INITIALIZED.store(true, Release);
-                INITIALIZING.store(false, Release);
-            }
-        }
+        super::init();
     }
 
     /// Initializes the MAC state with a key.

@@ -20,6 +20,12 @@ AEGIS is a new family of authenticated encryption algorithms, offering high secu
 
 - `js`: enables `getrandom` with the `wasm_js` backend for use in `wasm32-unknown-unknown` environments with JavaScript.
 
+- `aegis128` (default): the AEGIS-128L family (`aegis128l`, `aegis128x2`, `aegis128x4`) of the C backend. Without it only the AEGIS-256 family is compiled.
+
+- `avx512` (default): the AVX-512 backends of the X4 ciphers in the C backend. Without them the X4 ciphers use AVX2 at most, for code that must save the vector state it uses.
+
+- `kernel`: build the C backend for code without a C runtime, such as Windows kernel drivers: no load-time initializer, no C runtime `errno`, and on MSVC targets clang-cl (found on `PATH`, in `%LLVM_PATH%\bin` or `%ProgramFiles%\LLVM\bin`) with `/GS-` and `/kernel`; the code is not tuned for the build machine. Use it with `default-features = false`, and see the `cpu` module for which vector instructions the backends use on the running processor.
+
 # WebAssembly
 
 The C backend includes separate WebAssembly libraries for browser and WASI targets.

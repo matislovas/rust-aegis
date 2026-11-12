@@ -65,15 +65,28 @@ name = "throughput"
 harness = false
 
 [features]
-default = ["std"]
+default = ["std", "aegis128", "avx512"]
 force-wasm-relaxed-simd = []
 force-wasm-strict-simd = []
 pure-rust = ["softaes"]
-rustcrypto-traits-06 = ["aead"]
+rustcrypto-traits-06 = ["aead", "aegis128"]
 std = []
 raf = ["raf-core", "getrandom"]
-raf-core = ["std", "pastey"]
+raf-core = ["std", "pastey", "aegis128"]
 js = ["getrandom", "getrandom/wasm_js"]
+# The AEGIS-128L family (AEGIS-128L, -128X2, -128X4) of the C backend. Without it, only the
+# AEGIS-256 family is compiled (libaegis' DISABLE_AEGIS128).
+aegis128 = []
+# The AVX-512 backends of the X4 ciphers in the C backend. Without them, X4 runs on AVX2 at
+# most (libaegis' DISABLE_AVX512): for code that must save the vector state it uses, such as
+# kernel drivers that save only the AVX state.
+avx512 = []
+# Builds the C backend for code without a C runtime, such as Windows kernel drivers: no load-time
+# initializer (AEGIS_NO_CONSTRUCTOR; the crate runs aegis_init before first use), no C runtime
+# errno (AEGIS_NO_ERRNO), and with MSVC-style compilers no stack cookies (/GS-) and /kernel.
+# Not tuned for the build machine, and no instruction set enabled beyond the backends' own
+# target attributes. Uses clang-cl on MSVC targets (PATH, %LLVM_PATH%\bin, %ProgramFiles%\LLVM\bin).
+kernel = []
 
 [profile.release]
 codegen-units = 1
